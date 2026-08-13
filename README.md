@@ -73,6 +73,26 @@ tabela (Delta/Iceberg/Hudi) que vimos na aula do Lakehouse.
 > por isso evitamos batizar a pasta de origem de `raw`. Aqui, "fontes" são os
 > arquivos ANTES do pipeline; Bronze é o que o pipeline capturou.
 
+### O Medallion mora em `data/`
+
+A pasta `data/` é o **storage** desta PoC — um mini data lake local:
+
+```text
+data/
+├── fontes_poc/   # sistemas de origem (simulados)
+├── bronze/       # dado capturado, próximo à origem      <- escrito pela INGESTÃO (Pandas)
+├── silver/       # dado limpo, tipado, padronizado       <- escrito pelo DBT
+└── gold/         # dado modelado para consumo (fato/dims) <- escrito pelo DBT
+```
+
+Todas as camadas são **arquivos Parquet** — abra as pastas depois de rodar o
+pipeline e o `dbt run` e veja o refinamento progressivo acontecer no disco.
+O DuckDB registra *views* sobre esses arquivos no `data/analytics.duckdb`:
+é a separação entre **armazenamento** (arquivos nas pastas) e **processamento**
+(o engine que os consulta) — o mesmo princípio do Lakehouse, em miniatura.
+Num projeto real, `data/` viraria um bucket de object storage (S3/MinIO) e
+nada do raciocínio mudaria.
+
 Em produção não existiria uma pasta `fontes` no repositório: os dados chegariam
 por APIs, bancos e eventos. O Bronze é a **porta de entrada oficial** do pipeline.
 
@@ -81,27 +101,43 @@ por APIs, bancos e eventos. O Bronze é a **porta de entrada oficial** do pipeli
 ```text
 data-pipeline-poc/
 ├── README.md
-├── .gitignore
+├── .gitignore            # o que NÃO vai para o Git (dados gerados, .env, artefatos)
 ├── .env.example          # modelo de configuração (copie para .env)
-├── requirements.txt
-├── data/
-│   ├── fontes_poc/       # FONTES da atividade (versionadas)
-│   └── bronze/           # gerada pelo pipeline (não versionada)
-├── src/
-│   ├── config.py         # configuração via .env
-│   ├── ingest.py         # ingestão (Pandas -> Parquet)
-│   └── pipeline.py       # orquestrador simples
-├── dbt/
-│   ├── dbt_project.yml
-│   ├── profiles.yml      # sem credenciais -> versionado (leia o comentário!)
+├── requirements.txt      # dependências Python do projeto
+│
+├── data/                 # o STORAGE da PoC (nosso mini data lake local)
+│   ├── fontes_poc/       #   sistemas de origem simulados (CSV/JSON) — versionados
+│   ├── bronze/           #   camada Bronze: Parquet gravado pela INGESTÃO
+│   ├── silver/           #   camada Silver: Parquet gravado pelo DBT
+│   ├── gold/             #   camada Gold:   Parquet gravado pelo DBT
+│   └── analytics.duckdb  #   catálogo/serving do DuckDB (gerado no 1º dbt run)
+│
+├── src/                  # código de INGESTÃO (Python)
+│   ├── config.py         #   lê o .env e centraliza caminhos (nada hardcoded)
+│   ├── ingest.py         #   uma função de ingestão por fonte (Pandas -> Parquet)
+│   └── pipeline.py       #   orquestrador: executa as ingestões em sequência
+│
+├── dbt/                  # projeto de TRANSFORMAÇÃO (dbt)
+│   ├── dbt_project.yml   #   configuração do projeto (camadas, materializações)
+│   ├── profiles.yml      #   conexão com o DuckDB (sem credenciais -> versionado)
 │   └── models/
-│       ├── sources.yml   # onde o Bronze entra no mundo dbt
-│       ├── silver/       # stg_*: limpeza, tipagem, padronização
-│       └── gold/         # fato + dimensões (modelo analítico)
-├── tests/                # pytest (testa o CÓDIGO)
+│       ├── sources.yml   #   declara o Bronze como fonte (source) do dbt
+│       ├── silver/       #   stg_*: tipagem, limpeza, padronização (1 .sql por tabela)
+│       │   └── schema.yml#   testes de qualidade da Silver
+│       └── gold/         #   fato_processo + dimensões (modelo analítico)
+│           └── schema.yml#   testes de qualidade da Gold
+│
+├── tests/                # pytest: testa o CÓDIGO da ingestão
 └── docs/
-    └── architecture.md
+    └── architecture.md   # diagrama e decisões de arquitetura
 ```
+
+**Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage);
+`src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado
+caminha da esquerda para a direita dentro de `data/` (`fontes_poc → bronze →
+silver → gold`), e cada salto é feito por um pedaço de código diferente:
+o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml`
+não movem dados — declaram **testes e documentação** sobre cada modelo.
 
 ## Preparação do ambiente
 
@@ -143,17 +179,60 @@ copy .env.example .env
 python -m src.pipeline
 ```
 
-Você verá a ingestão criar `data/bronze/*.parquet` — e avisar que duas
-etapas ainda não existem. **Elas são suas.**
+**O que acontece quando você roda isso:**
+
+1. `pipeline.py` carrega a configuração (`config.py` lê o `.env`) e percorre
+   a lista de etapas de ingestão, em sequência — um pipeline é, antes de
+   qualquer ferramenta, uma sequência de etapas com dependências.
+2. Cada `ingest_*()` lê sua fonte em `data/fontes_poc/` com Pandas,
+   **tudo como texto** (tipar é interpretação — e interpretação é papel da
+   Silver), acrescenta o metadado `_ingerido_em` e grava Parquet em
+   `data/bronze/`.
+3. Os logs contam a história: quantos registros entraram, o que foi gravado.
+   É a forma embrionária de responder "como sei se meu pipeline funcionou?".
+4. Uma etapa avisa que ainda não existe (`ingest_movimentacoes`) —
+   **ela é sua** (desafio).
+
+Ao final: `data/bronze/processos.parquet`, `comarcas.parquet` e
+`classes.parquet` existem. O dado entrou no pipeline — o que **não**
+significa que está pronto para análise.
 
 ## dbt
 
 ```bash
 cd dbt
 dbt debug     # confere ambiente e conexão
-dbt run       # constrói Silver e Gold no DuckDB
+dbt run       # constrói Silver e Gold
 dbt test      # executa as regras de qualidade (alguns testes VÃO falhar: investigue!)
 ```
+
+**O que acontece no `dbt run`:**
+
+1. O dbt lê os modelos (`.sql`) e monta a **DAG** do projeto a partir de
+   `source()` e `ref()` — ninguém escreve a ordem de execução; ela é
+   deduzida das dependências declaradas.
+2. Para cada modelo, o dbt compila o SQL e manda o **DuckDB** executar.
+   O DuckDB lê o Parquet do Bronze diretamente (veja `external_location`
+   no `sources.yml`) — os dados não são "importados" para lugar nenhum.
+3. Cada modelo é materializado como **Parquet** na sua camada
+   (`data/silver/` ou `data/gold/` — veja o `location` no config de cada
+   `.sql`), e o DuckDB registra uma *view* sobre o arquivo em
+   `data/analytics.duckdb`. Abra as pastas após o `dbt run` e veja o
+   refinamento acontecer no disco.
+
+**O que acontece no `dbt test`:** cada regra declarada nos `schema.yml`
+(not_null, unique, relationships...) vira uma consulta SQL que procura
+violações. Teste que falha não é (necessariamente) bug do seu SQL —
+é um dado violando uma expectativa. Alguns testes deste projeto **falham
+de propósito** logo após o clone: eles apontam para os problemas de
+qualidade que você vai tratar na Silver.
+
+**E quem orquestra o quê?** Existem duas orquestrações aqui, de propósito:
+a **ingestão** é sequenciada pelo `pipeline.py` (em produção, viraria uma
+DAG de Airflow/Dagster — também Python); a **transformação** é orquestrada
+pelo próprio dbt via DAG dos `ref()`. No mundo real, o orquestrador ficaria
+POR CIMA dos dois: `ingestão → dbt run → dbt test`, com agendamento,
+retries e alertas.
 
 Documentação e lineage:
 
@@ -211,13 +290,18 @@ select
     cl.nome_classe,
     t.ano,
     avg(f.tempo_tramitacao_dias) as tempo_medio_dias
-from fato_processo f
-join dim_comarca c  on f.comarca_id = c.comarca_id
-join dim_classe cl  on f.classe_id  = cl.classe_id
-join dim_tempo t    on f.data_distribuicao = t.data
+from 'data/gold/fato_processo.parquet' f
+join 'data/gold/dim_comarca.parquet' c  on f.comarca_id = c.comarca_id
+join 'data/gold/dim_classe.parquet'  cl on f.classe_id  = cl.classe_id
+join 'data/gold/dim_tempo.parquet'   t  on f.data_distribuicao = t.data
 group by 1, 2, 3
 order by 1, 2, 3;
 ```
+
+Repare: a consulta lê a Gold **direto do storage** — o DuckDB consulta os
+Parquet sem precisar "importar" nada. (As views registradas em
+`data/analytics.duckdb` usam caminhos relativos à pasta `dbt/`; se quiser
+consultá-las pelo catálogo, abra o DuckDB a partir de lá.)
 
 ## Onde a Governança entra?
 

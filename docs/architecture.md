@@ -30,11 +30,14 @@ flowchart LR
 **refinamento progressivo com rastreabilidade**: sempre dá para voltar uma
 camada e entender de onde o dado veio.
 
-**Um arquivo DuckDB como "warehouse" local.** Não precisamos de servidor de
-banco para ensinar os conceitos. O DuckDB lê o Parquet do Bronze diretamente
-(veja `external_location` no `sources.yml`) e materializa Silver/Gold em
-`data/analytics.duckdb`. Separação entre armazenamento (arquivos) e
-processamento (engine) — o mesmo princípio do Lakehouse, em miniatura.
+**O storage é a pasta `data/` — e o Medallion é visível nela.** Bronze,
+Silver e Gold são pastas com arquivos Parquet: a ingestão escreve o Bronze;
+o dbt escreve Silver e Gold (materialização `external` do dbt-duckdb — veja
+o `location` no config de cada modelo). O DuckDB não "guarda" os dados: ele
+registra views sobre esses arquivos e os consulta. Separação entre
+armazenamento (arquivos) e processamento (engine) — o mesmo princípio do
+Lakehouse, em miniatura. Em produção, `data/` viraria object storage
+(S3/MinIO); o raciocínio permanece.
 
 **Ingestão fora do dbt.** O dbt transforma dados que já estão acessíveis a um
 engine analítico; trazer o dado até lá (ler JSON de uma API, CSV de um sistema)

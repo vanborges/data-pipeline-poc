@@ -4,6 +4,8 @@
 -- lógica de data repetida em cada consulta: ano, mês, trimestre
 -- ficam calculados UMA vez, prontos para agrupar.
 
+{{ config(location='../data/gold/dim_tempo.parquet') }}
+
 with datas as (
 
     -- Calendário contínuo entre a menor e a maior data do fato.

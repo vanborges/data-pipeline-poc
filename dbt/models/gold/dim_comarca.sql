@@ -8,6 +8,8 @@
 -- Ele DECLARA que este modelo depende de stg_comarcas — e é assim
 -- que o dbt monta a DAG do projeto.
 
+{{ config(location='../data/gold/dim_comarca.parquet') }}
+
 select
     comarca_id,
     nome_comarca,

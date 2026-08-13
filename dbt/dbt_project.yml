@@ -7,8 +7,11 @@ model-paths: ["models"]
 models:
   tribunal:
     silver:
-      # Views: a transformação fica "viva" — sempre reflete o Bronze atual.
-      +materialized: view
+      # Silver materializada como Parquet em data/silver/ (medallion visível!).
+      +materialized: external
+      +format: parquet
     gold:
-      # Tabelas: a camada de consumo é materializada de verdade.
-      +materialized: table
+      # Gold materializada como Parquet em data/gold/.
+      +materialized: external
+      +format: parquet
+

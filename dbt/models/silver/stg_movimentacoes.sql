@@ -5,7 +5,7 @@
 --   1) troque enabled=false por enabled=true abaixo;
 --   2) complete os TODOs.
 
-{{ config(enabled=false) }}
+{{ config(enabled=false, location='../data/silver/stg_movimentacoes.parquet') }}
 
 with fonte as (
 

@@ -1,5 +1,7 @@
 -- GOLD | dim_classe: dimensão de classe processual.
 
+{{ config(location='../data/gold/dim_classe.parquet') }}
+
 select
     classe_id,
     nome_classe

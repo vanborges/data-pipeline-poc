@@ -4,6 +4,8 @@
 -- É esta tabela que responde:
 --   "Qual é o tempo médio de tramitação por comarca, classe e período?"
 
+{{ config(location='../data/gold/fato_processo.parquet') }}
+
 with processos as (
 
     select * from {{ ref('stg_processos') }}

@@ -1,5 +1,7 @@
 -- SILVER | stg_classes: padronização e deduplicação das classes processuais.
 
+{{ config(location='../data/silver/stg_classes.parquet') }}
+
 with fonte as (
 
     select * from {{ source('bronze', 'classes') }}

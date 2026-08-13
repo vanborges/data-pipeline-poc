@@ -4,6 +4,8 @@
 -- Não confundir com a staging area FÍSICA do ETL clássico:
 -- lá era um lugar; aqui é uma transformação declarada em SQL.
 
+{{ config(location='../data/silver/stg_processos.parquet') }}
+
 with fonte as (
 
     select * from {{ source('bronze', 'processos') }}
