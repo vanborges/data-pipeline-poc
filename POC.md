@@ -1,7 +1,6 @@
 # POC — Passo a passo da atividade
 
-Este é o roteiro que você vai seguir. Leia o [`README.md`](README.md) antes:
-ele explica o que é a PoC, a pergunta de negócio e a arquitetura.
+Este é o roteiro que você vai seguir. Leia o [`README.md`](README.md) antes: ele explica o que é a PoC, a pergunta de negócio e a arquitetura.
 
 **A pergunta que precisamos responder ao final:**
 
@@ -56,8 +55,7 @@ Abra os arquivos em `data/fontes_poc/`:
 | `comarcas.csv` | CSV | cadastro de comarcas |
 | `classes.csv` | CSV | cadastro de classes processuais |
 
-**Pense antes de seguir:** os dados existem e estão à mão.
-Você já consegue responder a pergunta de negócio? O que falta?
+**Pense antes de seguir:** os dados existem e estão à mão. Você já consegue responder a pergunta de negócio? O que falta?
 
 ---
 
@@ -73,8 +71,7 @@ python -m src.pipeline
 - acrescentou o metadado `_ingerido_em`
 - gravou um Parquet em `data/bronze/`
 
-Abra `data/bronze/` e confira os arquivos criados. Repare no aviso do log:
-**uma etapa ainda não existe** — ela é sua (Passo 6).
+Abra `data/bronze/` e confira os arquivos criados. Repare no aviso do log: **uma etapa ainda não existe** — ela é sua (Passo 6).
 
 > Bronze = o que o pipeline capturou, próximo à origem.
 > Mudou o **formato** (CSV/JSON → Parquet), não o **conteúdo**.
@@ -121,17 +118,15 @@ dbt run       # constrói Silver e Gold
 dbt test      # executa as regras de qualidade
 ```
 
-O `dbt test` vai **falhar**. Isso é esperado: as falhas apontam exatamente os
-problemas que você encontrou no Passo 3. Um teste que falha não é um bug do
-seu SQL — é um dado violando uma regra declarada.
+O `dbt test` vai **falhar**. Isso é esperado: as falhas apontam exatamente os problemas que você encontrou no Passo 3. Um teste que falha não é um bug do seu SQL — é um dado violando uma regra declarada.
 
 Agora abra os modelos em `dbt/models/silver/` e resolva os `TODO`:
 
 - **`stg_processos.sql`** — datas em `DD/MM/YYYY` viram NULL no `try_cast`;
-  trate o formato alternativo. Depois: linhas duplicadas e `processo_id` nulo.
+trate o formato alternativo. Depois: linhas duplicadas e `processo_id` nulo.
 - **`stg_comarcas.sql`** — padronize os nomes (caixa e espaços inconsistentes).
 - **`stg_classes.sql`** — o mesmo `classe_id` aparece com duas grafias:
-  deduplique e escolha a grafia oficial.
+deduplique e escolha a grafia oficial.
 
 A cada mudança, rode de novo:
 
@@ -150,17 +145,14 @@ Acompanhe os arquivos sendo reescritos em `data/silver/`.
 Em `dbt/models/gold/`:
 
 - **`fato_processo.sql`** — calcule `tempo_tramitacao_dias`
-  (dica: `date_diff('day', data_distribuicao, data_baixa)`).
-  Decida: processos **em andamento** entram na média? E se o tempo der
-  **negativo**, o que isso significa?
+(dica: `date_diff('day', data_distribuicao, data_baixa)`). Decida: processos **em andamento** entram na média? E se o tempo der **negativo**, o que isso significa?
 - **`dim_tempo.sql`** — acrescente `nome_mes`, `trimestre` e `fim_de_semana`.
 
 ```bash
 dbt run
 ```
 
-Repare no `ref()` dos modelos: você nunca escreveu a ordem de execução —
-o dbt a deduz das dependências declaradas. É assim que nasce a DAG.
+Repare no `ref()` dos modelos: você nunca escreveu a ordem de execução — o dbt a deduz das dependências declaradas. É assim que nasce a DAG.
 
 > Gold = dado organizado para consumo. Aqui muda a **modelagem**
 > (fato + dimensões = star schema) e nasce a **medida**.
@@ -169,12 +161,11 @@ o dbt a deduz das dependências declaradas. É assim que nasce a DAG.
 
 ## Passo 6 — Ingerir o JSON (desafio)
 
-Implemente `ingest_movimentacoes()` em `src/ingest.py`, seguindo o padrão das
-outras ingestões (dica: `pd.read_json`). Depois:
+Implemente `ingest_movimentacoes()` em `src/ingest.py`, seguindo o padrão das outras ingestões (dica: `pd.read_json`). Depois:
 
 1. rode `python -m src.pipeline` e confirme `data/bronze/movimentacoes.parquet`;
 2. em `dbt/models/silver/stg_movimentacoes.sql`, troque `enabled=false`
-   por `enabled=true` e resolva os TODOs (datas e duplicatas);
+por `enabled=true` e resolva os TODOs (datas e duplicatas);
 3. rode `dbt run && dbt test`.
 
 ---
@@ -211,8 +202,7 @@ Ela vai unir o fato às três dimensões. Execute a partir da raiz do projeto:
 python -c "import duckdb; print(duckdb.sql(open('minha_consulta.sql').read()))"
 ```
 
-Onde `minha_consulta.sql` lê a Gold direto do storage — por exemplo:
-`from 'data/gold/fato_processo.parquet' f join 'data/gold/dim_comarca.parquet' c on ...`
+Onde `minha_consulta.sql` lê a Gold direto do storage — por exemplo: `from 'data/gold/fato_processo.parquet' f join 'data/gold/dim_comarca.parquet' c on ...`
 
 ---
 
@@ -224,8 +214,7 @@ dbt docs generate
 dbt docs serve
 ```
 
-Abra a DAG no navegador e percorra o caminho de um dado: da fonte até o fato.
-Compare com o desenho conceitual da aula:
+Abra a DAG no navegador e percorra o caminho de um dado: da fonte até o fato. Compare com o desenho conceitual da aula:
 
 ```text
 Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo
@@ -254,7 +243,6 @@ Fonte → Ingestão → Armazenamento → Transformação → Serving → Consum
 
 - **Engenharia:** o que você **construiu** nesta atividade?
 - **Gestão:** o que precisaria ser **mantido** para isso continuar funcionando
-  amanhã, com dados novos?
+amanhã, com dados novos?
 - **Governança:** quais decisões você tomou que **não eram técnicas**?
-  (Qual grafia da classe é a oficial? Um processo com comarca inexistente deve
-  ser descartado? Quem decide isso numa organização real?)
+(Qual grafia da classe é a oficial? Um processo com comarca inexistente deve ser descartado? Quem decide isso numa organização real?)

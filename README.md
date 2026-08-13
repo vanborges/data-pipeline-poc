@@ -1,26 +1,18 @@
 # PoC — A Jornada do Dado: do sistema transacional à decisão
 
-Prova de conceito da disciplina **Gestão e Governança de Dados**
-(Especialização em Engenharia de Software Inteligente · FACOM/UFMS).
+Prova de conceito da disciplina **Gestão e Governança de Dados** (Especialização em Engenharia de Software Inteligente · FACOM/UFMS).
 
-Na aula anterior, estudamos conceitualmente a jornada
-`Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo`.
-Aqui, essa jornada deixa de ser um desenho e vira um pipeline que você executa e completa.
+Na aula anterior, estudamos conceitualmente a jornada `Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo`. Aqui, essa jornada deixa de ser um desenho e vira um pipeline que você executa e completa.
 
 ## A pergunta de negócio
 
 > **Qual é o tempo médio de tramitação por comarca, classe e período?**
 
-Uma pergunta simples de enunciar. Todo o projeto existe para respondê-la de
-forma **confiável e reproduzível** — e você vai descobrir que isso exige a jornada inteira.
+Uma pergunta simples de enunciar. Todo o projeto existe para respondê-la de forma **confiável e reproduzível** — e você vai descobrir que isso exige a jornada inteira.
 
 ## O problema
 
-Os dados de que precisamos estão espalhados em fontes diferentes de um
-Tribunal de Justiça fictício — CSVs e JSON, como se tivessem sido exportados
-de sistemas distintos — e **contêm problemas reais de qualidade**: datas em
-formatos misturados, registros duplicados, identificadores órfãos, grafias
-inconsistentes. Nada aqui está perfeito de propósito.
+Os dados de que precisamos estão espalhados em fontes diferentes de um Tribunal de Justiça fictício — CSVs e JSON, como se tivessem sido exportados de sistemas distintos — e **contêm problemas reais de qualidade**: datas em formatos misturados, registros duplicados, identificadores órfãos, grafias inconsistentes. Nada aqui está perfeito de propósito.
 
 ## Arquitetura
 
@@ -77,16 +69,9 @@ data/
 └── gold/         # dado modelado para consumo (fato/dims) <- escrito pelo DBT
 ```
 
-Todas as camadas são **arquivos Parquet** — abra as pastas depois de rodar o
-pipeline e o `dbt run` e veja o refinamento progressivo acontecer no disco.
-O DuckDB registra *views* sobre esses arquivos no `data/analytics.duckdb`:
-é a separação entre **armazenamento** (arquivos nas pastas) e **processamento**
-(o engine que os consulta) — o mesmo princípio do Lakehouse, em miniatura.
-Num projeto real, `data/` viraria um bucket de object storage (S3/MinIO) e
-nada do raciocínio mudaria.
+Todas as camadas são **arquivos Parquet** — abra as pastas depois de rodar o pipeline e o `dbt run` e veja o refinamento progressivo acontecer no disco. O DuckDB registra *views* sobre esses arquivos no `data/analytics.duckdb`: é a separação entre **armazenamento** (arquivos nas pastas) e **processamento** (o engine que os consulta) — o mesmo princípio do Lakehouse, em miniatura. Num projeto real, `data/` viraria um bucket de object storage (S3/MinIO) e nada do raciocínio mudaria.
 
-Em produção não existiria uma pasta `fontes` no repositório: os dados chegariam
-por APIs, bancos e eventos. O Bronze é a **porta de entrada oficial** do pipeline.
+Em produção não existiria uma pasta `fontes` no repositório: os dados chegariam por APIs, bancos e eventos. O Bronze é a **porta de entrada oficial** do pipeline.
 
 ## Estrutura do repositório
 
@@ -124,22 +109,14 @@ data-pipeline-poc/
     └── architecture.md   # diagrama e decisões de arquitetura
 ```
 
-**Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage);
-`src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado
-caminha da esquerda para a direita dentro de `data/` (`fontes_poc → bronze →
-silver → gold`), e cada salto é feito por um pedaço de código diferente:
-o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml`
-não movem dados — declaram **testes e documentação** sobre cada modelo.
+**Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage); `src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado caminha da esquerda para a direita dentro de `data/` (`fontes_poc → bronze → silver → gold`), e cada salto é feito por um pedaço de código diferente: o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml` não movem dados — declaram **testes e documentação** sobre cada modelo.
 
 ---
 
 ## Como executar
 
-O passo a passo completo da atividade — instalação, execução do pipeline,
-uso do dbt e o que você precisa implementar — está em **[`POC.md`](POC.md)**.
+O passo a passo completo da atividade — instalação, execução do pipeline, uso do dbt e o que você precisa implementar — está em **[`POC.md`](POC.md)**.
 
 ---
 
-**Engenharia de Dados não existe apenas para mover arquivos ou alimentar
-dashboards.** Ela constrói e mantém a jornada necessária para transformar
-dados em informação confiável e utilizável.
+**Engenharia de Dados não existe apenas para mover arquivos ou alimentar dashboards.** Ela constrói e mantém a jornada necessária para transformar dados em informação confiável e utilizável.
