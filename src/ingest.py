@@ -64,15 +64,11 @@ def ingest_classes() -> None:
 
 
 def ingest_movimentacoes() -> None:
-    """[DESAFIO] Ingestão do JSON de movimentações.
-
-    Dicas:
-        - pd.read_json(caminho) lê uma lista de objetos JSON.
-        - Leia como texto (dica: .astype(str) ou dtype=str via convert)
-          para manter o padrão do Bronze.
-        - O restante segue o mesmo padrão das outras ingestões.
-        - Depois de implementar, habilite o modelo stg_movimentacoes
-          no dbt (veja o TODO lá).
-    """
-    # TODO (desafio): implementar a ingestão de movimentacoes.json
-    raise NotImplementedError("Desafio: implemente a ingestão do JSON.")
+    """[RESOLVIDO] Ingestão do JSON de movimentações."""
+    origem = DATA_FONTES_PATH / "movimentacoes.json"
+    logger.info("Lendo %s", origem.name)
+    # read_json infere tipos; convertemos tudo para texto para manter
+    # o padrão do Bronze (tipar é papel da Silver).
+    df = pd.read_json(origem).astype(str)
+    logger.info("%d registros encontrados", len(df))
+    _gravar_bronze(df, "movimentacoes")
