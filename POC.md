@@ -94,6 +94,8 @@ Consulte o Bronze direto, sem importar nada:
 python -c "import duckdb; print(duckdb.sql(\"select * from 'data/bronze/processos.parquet' limit 10\"))"
 ```
 
+> Prefere uma interface visual? Abra **`notebooks/exploracao.ipynb`** no VS Code: ele traz estas mesmas investigações prontas, além de uma seção que mostra o Parquet por dentro (schema, compressão por coluna) e a comparação entre as camadas.
+
 Procure problemas. Sugestões de investigação:
 
 ```sql

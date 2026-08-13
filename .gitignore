@@ -41,3 +41,6 @@ solucoes/
 
 # Config local do Claude/editor
 .claude/
+
+# Jupyter
+.ipynb_checkpoints/

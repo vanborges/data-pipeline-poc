@@ -104,6 +104,8 @@ data-pipeline-poc/
 │       └── gold/         #   fato_processo + dimensões (modelo analítico)
 │           └── schema.yml#   testes de qualidade da Gold
 │
+├── notebooks/
+│   └── exploracao.ipynb  # explorar os dados de cada camada (opcional)
 ├── tests/                # pytest: testa o CÓDIGO da ingestão
 └── docs/
     └── architecture.md   # diagrama e decisões de arquitetura
