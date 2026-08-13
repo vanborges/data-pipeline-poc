@@ -64,7 +64,7 @@ def ingest_classes() -> None:
 
 
 def ingest_movimentacoes() -> None:
-    """[RESOLVIDO] Ingestão do JSON de movimentações."""
+    """Ingestão do JSON de movimentações."""
     origem = DATA_FONTES_PATH / "movimentacoes.json"
     logger.info("Lendo %s", origem.name)
     # read_json infere tipos; convertemos tudo para texto para manter
