@@ -25,20 +25,7 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-**Windows (PowerShell)**
-
-```powershell
-git clone <url-do-repositorio>
-cd data-pipeline-poc
-
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-
-pip install -r requirements.txt
-copy .env.example .env
-```
-
-Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que você está no ambiente isolado do projeto. A partir daí, **os comandos dos próximos passos são iguais nos três sistemas**, inclusive `python -m src.pipeline`: dentro do venv, `python` e `pip` apontam para o interpretador do projeto.
+Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que você está no ambiente isolado do projeto. A partir daí, **os comandos dos próximos passos são sempre os mesmos**, inclusive `python -m src.pipeline`: dentro do venv, `python` e `pip` apontam para o interpretador do projeto.
 
 **Alternativa: quem usa Anaconda/Miniconda**
 
@@ -54,15 +41,12 @@ Nesse caso o prompt mostra `(poc)` em vez de `(.venv)`. Use **um** dos dois cami
 
 ### Se algo falhar
 
-| Erro | Sistema | O que fazer |
-|---|---|---|
-| `command not found: python` | macOS / Linux | use `python3` para **criar** o venv; depois de ativá-lo, `python` funciona |
-| `pip: bad interpreter: .../python@3.x` | macOS (Homebrew) | é o pip do sistema quebrado — ignore-o: crie e ative o venv, e use o `pip` de dentro dele |
-| `python` não é reconhecido | Windows | use `py` (o *launcher* oficial do Windows) |
-| `Activate.ps1 não pode ser carregado` | Windows | rode `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` e ative de novo |
-| usa o Prompt de Comando (cmd) | Windows | ative com `.venv\Scripts\activate.bat` |
-| `python3` não existe | macOS | instale com `brew install python@3.12` — ou use o caminho com conda acima |
-| `source .venv/bin/activate` diz *no such file* | todos | o venv não chegou a ser criado: rode o `python3 -m venv .venv` de novo e confira se ele terminou sem erro |
+| Erro | O que fazer |
+|---|---|
+| `command not found: python` | use `python3` para **criar** o venv; depois de ativá-lo, `python` funciona |
+| `pip: bad interpreter: .../python@3.x` | é o pip do sistema (Homebrew) quebrado — ignore-o: crie e ative o venv, e use o `pip` de dentro dele |
+| `python3` não existe | instale com `brew install python@3.12` — ou use o caminho com conda acima |
+| `source .venv/bin/activate` diz *no such file* | o venv não chegou a ser criado: rode o `python3 -m venv .venv` de novo e confira se ele terminou sem erro |
 
 > O `.env` guarda a configuração (caminhos das pastas) e **não** é versionado. Em projetos reais é onde ficam credenciais — por isso essa separação existe desde o início.
 
