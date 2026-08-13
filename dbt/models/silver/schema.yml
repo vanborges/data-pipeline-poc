@@ -1,0 +1,36 @@
+version: 2
+
+# Qualidade de dados expressa como CÓDIGO EXECUTÁVEL.
+# `dbt test` verifica estas regras contra os dados de verdade.
+# Um teste que falha não é (necessariamente) um bug do SQL:
+# é um dado que violou uma regra declarada.
+models:
+  - name: stg_processos
+    description: Processos tipados e preparados a partir do Bronze.
+    columns:
+      - name: processo_id
+        description: Identificador único do processo.
+        tests:
+          - not_null   # ATENÇÃO — este teste FALHA de propósito no início da atividade.
+          - unique     # Este também. Descubra por quê (olhe a origem!).
+      - name: data_distribuicao
+        description: Data em que o processo foi distribuído.
+        tests:
+          - not_null   # Falha enquanto o TODO de formato de data não for resolvido.
+      # TODO (desafio): adicione um teste accepted_values na coluna `situacao`
+      #   aceitando apenas: 'Baixado' e 'Em andamento'.
+      #   Docs: https://docs.getdbt.com/reference/resource-properties/data-tests
+
+  - name: stg_comarcas
+    columns:
+      - name: comarca_id
+        tests:
+          - not_null
+          - unique
+
+  - name: stg_classes
+    columns:
+      - name: classe_id
+        tests:
+          - not_null
+          # TODO (desafio): após deduplicar no modelo, adicione o teste `unique` aqui.

@@ -1,0 +1,23 @@
+version: 2
+
+# source() = dados que ENTRAM no domínio do dbt (produzidos pela ingestão Python).
+# ref()    = dependência entre modelos produzidos PELO PRÓPRIO dbt.
+# É com source() e ref() que o dbt descobre a DAG do projeto.
+sources:
+  - name: bronze
+    description: >
+      Camada Bronze: Parquet gravado pela ingestão (Python + Pandas),
+      preservando os dados próximos à origem. O dbt-duckdb lê os
+      arquivos diretamente via external_location — não é preciso
+      carregar nada num servidor de banco.
+    meta:
+      external_location: "../data/bronze/{name}.parquet"
+    tables:
+      - name: processos
+        description: Processos judiciais capturados do sistema transacional (CSV).
+      - name: comarcas
+        description: Cadastro de comarcas (CSV).
+      - name: classes
+        description: Cadastro de classes processuais (CSV).
+      - name: movimentacoes
+        description: Eventos de movimentação processual (JSON). Só existe após o desafio de ingestão.

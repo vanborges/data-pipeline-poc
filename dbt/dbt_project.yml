@@ -1,0 +1,14 @@
+name: tribunal
+version: "1.0.0"
+profile: tribunal
+
+model-paths: ["models"]
+
+models:
+  tribunal:
+    silver:
+      # Views: a transformação fica "viva" — sempre reflete o Bronze atual.
+      +materialized: view
+    gold:
+      # Tabelas: a camada de consumo é materializada de verdade.
+      +materialized: table

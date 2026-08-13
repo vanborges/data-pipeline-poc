@@ -1,0 +1,31 @@
+# Configuração local (nunca versionar)
+.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Dados gerados pelo pipeline (o aluno os produz ao executar)
+# ATENÇÃO: data/raw/ É versionado — são as fontes da atividade.
+data/bronze/
+data/*.duckdb
+data/*.duckdb.wal
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+dbt/.user.yml
+
+# Logs e temporários
+*.log
+*.tmp
+
+# Sistema operacional / IDEs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: fato_processo
+    description: >
+      Tabela fato no grão de processo. Permite derivar o tempo de
+      tramitação e agregá-lo por comarca, classe e período.
+    columns:
+      - name: processo_id
+        tests:
+          - not_null
+      - name: comarca_id
+        tests:
+          # Integridade referencial expressa como teste:
+          # todo comarca_id do fato precisa existir na dimensão.
+          # ATENÇÃO — falha de propósito no início (há um id órfão na origem).
+          - relationships:
+              arguments:
+                to: ref('dim_comarca')
+                field: comarca_id
+      # TODO (desafio): crie o teste de relacionamento equivalente
+      #   entre classe_id e dim_classe.
+
+  - name: dim_comarca
+    columns:
+      - name: comarca_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_tempo
+    columns:
+      - name: data
+        tests:
+          - not_null
+          - unique
