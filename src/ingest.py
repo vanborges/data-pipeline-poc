@@ -64,11 +64,23 @@ def ingest_classes() -> None:
 
 
 def ingest_movimentacoes() -> None:
-    """Ingestão do JSON de movimentações."""
+    """[PRONTO] Ingestão do JSON de movimentações.
+
+    Repare no que muda em relação às ingestões de CSV — e no que NÃO muda:
+
+    - muda o LEITOR: `read_json` no lugar de `read_csv`, porque a origem
+      entrega uma lista de objetos JSON, não linhas separadas por vírgula;
+    - `read_json` infere tipos por conta própria (viraria int, datetime...),
+      então convertemos tudo para texto com `.astype(str)` — mantendo a
+      mesma regra das outras fontes: o Bronze preserva, quem tipa é a Silver;
+    - NÃO muda o destino: sai um Parquet igual aos outros. É por isso que,
+      da Silver em diante, o dbt trata CSV e JSON exatamente do mesmo jeito.
+
+    Essa é a função da camada de ingestão: absorver a diversidade das fontes
+    e entregar um formato único para o resto do pipeline.
+    """
     origem = DATA_FONTES_PATH / "movimentacoes.json"
     logger.info("Lendo %s", origem.name)
-    # read_json infere tipos; convertemos tudo para texto para manter
-    # o padrão do Bronze (tipar é papel da Silver).
     df = pd.read_json(origem).astype(str)
     logger.info("%d registros encontrados", len(df))
     _gravar_bronze(df, "movimentacoes")

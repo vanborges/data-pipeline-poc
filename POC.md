@@ -79,7 +79,9 @@ python -m src.pipeline
 - acrescentou o metadado `_ingerido_em`
 - gravou um Parquet em `data/bronze/`
 
-Abra `data/bronze/` e confira os arquivos criados. Repare no aviso do log: **uma etapa ainda não existe** — ela é sua (Passo 6).
+Abra `data/bronze/` e confira os arquivos criados: quatro Parquet, um por fonte.
+
+Vale abrir o `src/ingest.py` e comparar `ingest_processos()` (CSV) com `ingest_movimentacoes()` (JSON): muda o leitor, mas o destino é o mesmo. **É essa a função da ingestão — absorver a diversidade das fontes e entregar um formato único para o resto do pipeline.**
 
 > Bronze = o que o pipeline capturou, próximo à origem.
 > Mudou o **formato** (CSV/JSON → Parquet), não o **conteúdo**.
@@ -169,14 +171,18 @@ Repare no `ref()` dos modelos: você nunca escreveu a ordem de execução — o 
 
 ---
 
-## Passo 6 — Ingerir o JSON (desafio)
+## Passo 6 — Tratar as movimentações na Silver
 
-Implemente `ingest_movimentacoes()` em `src/ingest.py`, seguindo o padrão das outras ingestões (dica: `pd.read_json`). Depois:
+A ingestão do JSON já veio pronta, mas o **tratamento** não. Abra `dbt/models/silver/stg_movimentacoes.sql` e resolva os TODOs:
 
-1. rode `python -m src.pipeline` e confirme `data/bronze/movimentacoes.parquet`;
-2. em `dbt/models/silver/stg_movimentacoes.sql`, troque `enabled=false`
-por `enabled=true` e resolva os TODOs (datas e duplicatas);
-3. rode `dbt run && dbt test`.
+- datas em formato `DD/MM/YYYY` (o mesmo problema da `stg_processos`);
+- eventos integralmente duplicados.
+
+```bash
+dbt run && dbt test
+```
+
+Depois, uma pergunta de integridade: existe movimentação apontando para um processo que não está na base? (Dica: um `left join` entre `stg_movimentacoes` e `stg_processos` responde — e um teste `relationships` transforma isso em regra permanente.)
 
 ---
 
@@ -240,11 +246,10 @@ Fonte → Ingestão → Armazenamento → Transformação → Serving → Consum
 [ ] Ambiente preparado e pipeline executado
 [ ] Problemas de qualidade identificados e documentados
 [ ] Silver tratando datas, duplicatas e padronização
-[ ] Ingestão do JSON implementada
-[ ] Modelo stg_movimentacoes habilitado e tratado
+[ ] Movimentações tratadas na Silver (datas e duplicatas)
 [ ] Gold com tempo_tramitacao_dias e dim_tempo completa
 [ ] Testes dbt ampliados e todos passando
-[ ] Teste pytest da ingestão do JSON
+[ ] Teste pytest adicional escrito
 [ ] Consulta final respondendo a pergunta de negócio
 [ ] dbt docs gerado (lineage)
 ```

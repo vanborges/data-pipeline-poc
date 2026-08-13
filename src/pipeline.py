@@ -31,10 +31,7 @@ def main() -> None:
     ]
 
     for etapa in etapas:
-        try:
-            etapa()
-        except NotImplementedError as exc:
-            logger.warning("%s ainda não implementada: %s", etapa.__name__, exc)
+        etapa()
 
     logger.info("Ingestão concluída. Bronze disponível em data/bronze/")
 

@@ -1,11 +1,9 @@
 -- SILVER | stg_movimentacoes: preparação dos eventos de movimentação.
 --
--- DESATIVADO até você implementar a ingestão do JSON (desafio no
--- src/ingest.py). Depois de gerar bronze/movimentacoes.parquet:
---   1) troque enabled=false por enabled=true abaixo;
---   2) complete os TODOs.
+-- A ingestão do JSON já vem pronta (src/ingest.py) — o tratamento da
+-- qualidade, não: os TODOs abaixo são seus.
 
-{{ config(enabled=false, location='../data/silver/stg_movimentacoes.parquet') }}
+{{ config(location='../data/silver/stg_movimentacoes.parquet') }}
 
 with fonte as (
 

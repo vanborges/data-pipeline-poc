@@ -32,6 +32,16 @@ def test_bronze_tem_metadado_de_ingestao():
     assert "_ingerido_em" in bronze.columns
 
 
-# TODO (desafio): depois de implementar ingest_movimentacoes(),
-#   escreva um teste que verifique a criação de movimentacoes.parquet
-#   e a presença das colunas processo_id, tipo_movimento e data_movimento.
+def test_ingest_movimentacoes_gera_parquet_com_colunas():
+    """A ingestão do JSON produz Parquet com as colunas esperadas."""
+    ingest.ingest_movimentacoes()
+    destino = DATA_BRONZE_PATH / "movimentacoes.parquet"
+    assert destino.exists()
+    bronze = pd.read_parquet(destino)
+    for coluna in ["processo_id", "tipo_movimento", "data_movimento"]:
+        assert coluna in bronze.columns
+
+
+# TODO (desafio): escreva um teste garantindo que o Bronze de movimentações
+#   preserva a mesma quantidade de eventos do JSON de origem.
+#   (Dica: pd.read_json na fonte e compare os tamanhos.)
