@@ -10,7 +10,7 @@ Este é o roteiro que você vai seguir. Leia o [`README.md`](README.md) antes: e
 
 ## Passo 0 — Preparar o ambiente
 
-Requisitos: **Python 3.12+** e Git.
+Requisitos: **Python 3.10 ou superior** e Git.
 
 **Linux / macOS**
 
@@ -40,6 +40,18 @@ copy .env.example .env
 
 Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que você está no ambiente isolado do projeto. A partir daí, **os comandos dos próximos passos são iguais nos três sistemas**, inclusive `python -m src.pipeline`: dentro do venv, `python` e `pip` apontam para o interpretador do projeto.
 
+**Alternativa: quem usa Anaconda/Miniconda**
+
+```bash
+conda create -n poc python=3.12 -y
+conda activate poc
+
+pip install -r requirements.txt
+cp .env.example .env
+```
+
+Nesse caso o prompt mostra `(poc)` em vez de `(.venv)`. Use **um** dos dois caminhos (venv **ou** conda) — misturar os dois costuma gerar confusão sobre qual `python` está valendo.
+
 ### Se algo falhar
 
 | Erro | Sistema | O que fazer |
@@ -49,7 +61,8 @@ Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que v
 | `python` não é reconhecido | Windows | use `py` (o *launcher* oficial do Windows) |
 | `Activate.ps1 não pode ser carregado` | Windows | rode `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` e ative de novo |
 | usa o Prompt de Comando (cmd) | Windows | ative com `.venv\Scripts\activate.bat` |
-| `python3` não existe | macOS | instale com `brew install python@3.12` |
+| `python3` não existe | macOS | instale com `brew install python@3.12` — ou use o caminho com conda acima |
+| `source .venv/bin/activate` diz *no such file* | todos | o venv não chegou a ser criado: rode o `python3 -m venv .venv` de novo e confira se ele terminou sem erro |
 
 > O `.env` guarda a configuração (caminhos das pastas) e **não** é versionado. Em projetos reais é onde ficam credenciais — por isso essa separação existe desde o início.
 
