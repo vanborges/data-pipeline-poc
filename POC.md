@@ -130,6 +130,8 @@ dbt run       # constrói Silver e Gold
 dbt test      # executa as regras de qualidade
 ```
 
+> Quer entender o que acontece por dentro desse `dbt run`? As cinco etapas (parse, compile, DAG, ordenação e execução) estão explicadas em [`docs/architecture.md`](docs/architecture.md#como-o-dbt-executa-o-que-acontece-quando-você-roda-dbt-run). Dica: abra `dbt/target/compiled/` e compare com o `.sql` que você escreveu.
+
 O `dbt test` vai **falhar**. Isso é esperado: as falhas apontam exatamente os problemas que você encontrou no Passo 3. Um teste que falha não é um bug do seu SQL — é um dado violando uma regra declarada.
 
 Agora abra os modelos em `dbt/models/silver/` e resolva os `TODO`:
