@@ -18,7 +18,7 @@ Requisitos: **Python 3.12+** e Git.
 git clone <url-do-repositorio>
 cd data-pipeline-poc
 
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
@@ -31,16 +31,27 @@ cp .env.example .env
 git clone <url-do-repositorio>
 cd data-pipeline-poc
 
-python -m venv .venv
+py -m venv .venv
 .venv\Scripts\Activate.ps1
 
 pip install -r requirements.txt
 copy .env.example .env
 ```
 
-> O `.env` guarda a configuração (caminhos das pastas) e **não** é versionado.
-> Em projetos reais é onde ficam credenciais — por isso essa separação existe
-> desde o início.
+Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que você está no ambiente isolado do projeto. A partir daí, **os comandos dos próximos passos são iguais nos três sistemas**, inclusive `python -m src.pipeline`: dentro do venv, `python` e `pip` apontam para o interpretador do projeto.
+
+### Se algo falhar
+
+| Erro | Sistema | O que fazer |
+|---|---|---|
+| `command not found: python` | macOS / Linux | use `python3` para **criar** o venv; depois de ativá-lo, `python` funciona |
+| `pip: bad interpreter: .../python@3.x` | macOS (Homebrew) | é o pip do sistema quebrado — ignore-o: crie e ative o venv, e use o `pip` de dentro dele |
+| `python` não é reconhecido | Windows | use `py` (o *launcher* oficial do Windows) |
+| `Activate.ps1 não pode ser carregado` | Windows | rode `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` e ative de novo |
+| usa o Prompt de Comando (cmd) | Windows | ative com `.venv\Scripts\activate.bat` |
+| `python3` não existe | macOS | instale com `brew install python@3.12` |
+
+> O `.env` guarda a configuração (caminhos das pastas) e **não** é versionado. Em projetos reais é onde ficam credenciais — por isso essa separação existe desde o início.
 
 ---
 
