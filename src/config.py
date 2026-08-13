@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 # Carrega variáveis do arquivo .env (se existir)
 load_dotenv(PROJECT_ROOT / ".env")
 
-DATA_RAW_PATH = PROJECT_ROOT / os.getenv("DATA_RAW_PATH", "data/raw")
+DATA_FONTES_PATH = PROJECT_ROOT / os.getenv("DATA_FONTES_PATH", "data/fontes_poc")
 DATA_BRONZE_PATH = PROJECT_ROOT / os.getenv("DATA_BRONZE_PATH", "data/bronze")
 DUCKDB_PATH = PROJECT_ROOT / os.getenv("DUCKDB_PATH", "data/analytics.duckdb")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

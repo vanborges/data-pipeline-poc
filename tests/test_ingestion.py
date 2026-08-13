@@ -8,7 +8,7 @@ Complementares aos testes do dbt:
 import pandas as pd
 
 from src import ingest
-from src.config import DATA_BRONZE_PATH, DATA_RAW_PATH
+from src.config import DATA_BRONZE_PATH, DATA_FONTES_PATH
 
 
 def test_ingest_processos_gera_parquet():
@@ -20,7 +20,7 @@ def test_ingest_processos_gera_parquet():
 def test_bronze_preserva_todas_as_linhas_da_origem():
     """Bronze preserva a origem: mesma quantidade de linhas do CSV."""
     ingest.ingest_processos()
-    origem = pd.read_csv(DATA_RAW_PATH / "processos.csv", dtype=str)
+    origem = pd.read_csv(DATA_FONTES_PATH / "processos.csv", dtype=str)
     bronze = pd.read_parquet(DATA_BRONZE_PATH / "processos.parquet")
     assert len(bronze) == len(origem)
 

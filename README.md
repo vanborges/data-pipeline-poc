@@ -25,7 +25,7 @@ inconsistentes. Nada aqui está perfeito de propósito.
 ## Arquitetura
 
 ```text
-FONTES            CSV / JSON            (data/raw)
+FONTES            CSV / JSON            (data/fontes_poc)
   ↓
 INGESTÃO          Python + Pandas       (src/)
   ↓
@@ -64,12 +64,16 @@ que a consulta precisa — exatamente o padrão de acesso analítico (varrer
 milhões de linhas de poucas colunas). É também a base dos formatos de
 tabela (Delta/Iceberg/Hudi) que vimos na aula do Lakehouse.
 
-### `data/raw` não é Bronze
+### `data/fontes_poc` não é Bronze
 
-- **`data/raw/`** — os arquivos que a origem nos entregou (versionados no repo, para a atividade).
+- **`data/fontes_poc/`** — os arquivos que a origem nos entregou (versionados no repo, para a atividade).
 - **`data/bronze/`** — o que o **nosso pipeline capturou e persistiu** (gerado quando você executa a ingestão), preservado o mais próximo possível da origem, com metadado de ingestão e formato eficiente.
 
-Em produção não existiria uma pasta `raw` no repositório: os dados chegariam
+> Nota sobre nomes: em muitas empresas a camada Bronze é chamada de **raw zone** —
+> por isso evitamos batizar a pasta de origem de `raw`. Aqui, "fontes" são os
+> arquivos ANTES do pipeline; Bronze é o que o pipeline capturou.
+
+Em produção não existiria uma pasta `fontes` no repositório: os dados chegariam
 por APIs, bancos e eventos. O Bronze é a **porta de entrada oficial** do pipeline.
 
 ## Estrutura do repositório
@@ -81,7 +85,7 @@ data-pipeline-poc/
 ├── .env.example          # modelo de configuração (copie para .env)
 ├── requirements.txt
 ├── data/
-│   ├── raw/              # FONTES da atividade (versionadas)
+│   ├── fontes_poc/       # FONTES da atividade (versionadas)
 │   └── bronze/           # gerada pelo pipeline (não versionada)
 ├── src/
 │   ├── config.py         # configuração via .env
@@ -184,7 +188,7 @@ inspecionar no olho, imperfeitos o suficiente para justificar a Silver.
 
 ```text
 [x] Clonar e preparar o ambiente
-[ ] Entender as fontes (abra os arquivos de data/raw!)
+[ ] Entender as fontes (abra os arquivos de data/fontes_poc!)
 [ ] Ingerir CSV               (uma pronta, uma em aula)
 [ ] Ingerir JSON              (desafio)
 [ ] Inspecionar schema

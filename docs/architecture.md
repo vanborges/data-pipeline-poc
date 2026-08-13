@@ -15,7 +15,7 @@ flowchart LR
 
 | Etapa | Papel | Neste projeto |
 |---|---|---|
-| **Fonte** | Onde o dado nasce | `data/raw/` — CSVs e JSON "exportados" dos sistemas do Tribunal |
+| **Fonte** | Onde o dado nasce | `data/fontes_poc/` — CSVs e JSON "exportados" dos sistemas do Tribunal |
 | **Ingestão** | Trazer o dado para o pipeline | `src/ingest.py` (Pandas) |
 | **Bronze** | Preservar o que chegou, rastreável | `data/bronze/*.parquet` |
 | **Silver** | Limpar, tipar, padronizar, integrar | modelos `stg_*` (dbt) |

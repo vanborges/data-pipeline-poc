@@ -9,7 +9,7 @@ __pycache__/
 .pytest_cache/
 
 # Dados gerados pelo pipeline (o aluno os produz ao executar)
-# ATENÇÃO: data/raw/ É versionado — são as fontes da atividade.
+# ATENÇÃO: data/fontes_poc/ É versionado — são as fontes da atividade.
 data/bronze/
 data/*.duckdb
 data/*.duckdb.wal
