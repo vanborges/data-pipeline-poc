@@ -222,6 +222,20 @@ python -c "import duckdb; print(duckdb.sql(open('minha_consulta.sql').read()))"
 
 Onde `minha_consulta.sql` lê a Gold direto do storage — por exemplo: `from 'data/gold/fato_processo.parquet' f join 'data/gold/dim_comarca.parquet' c on ...`
 
+### Variações (o gestor sempre pede mais)
+
+**a) Evolução no tempo:** o tempo médio por comarca **e ano** está melhorando ou piorando?
+
+**b) Por vara:** qual vara tem o maior tempo médio?
+
+> ⚠ Cuidado aqui — este é o exercício de verdade. Rode primeiro:
+> `select vara_id, count(distinct comarca_id) as comarcas from 'data/gold/fato_processo.parquet' group by 1`
+> A "vara 2" existe em quantas comarcas? O que isso significa para um `group by vara_id` sozinho?
+
+**c) Significância:** algumas médias são calculadas sobre 1 processo. Acrescente `having count(*) >= 3` e compare. Uma média de um caso é uma média?
+
+**d) Qual data importa?** As consultas acima agrupam pelo ano da **distribuição**. Se o gestor pedir "processos baixados em 2024", o `join` com `dim_tempo` passa a ser em `data_baixa`. **Duas perguntas diferentes, dois joins diferentes** — e é fácil errar sem perceber.
+
 ---
 
 ## Passo 9 — Documentação e lineage

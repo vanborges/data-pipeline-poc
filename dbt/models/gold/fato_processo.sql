@@ -16,6 +16,17 @@ select
     processo_id,
     comarca_id,
     classe_id,
+
+    -- vara_id é uma DIMENSÃO DEGENERADA: fica na própria fato porque a
+    -- origem só nos dá o identificador, sem nome nem atributos — não há
+    -- o que colocar numa dim_vara. Se amanhã chegasse um cadastro de varas
+    -- (nome, competência, magistrado), aí sim valeria uma dimensão própria.
+    --
+    -- ⚠ ATENÇÃO ao analisar: vara_id NÃO é único no estado — a "vara 2"
+    -- existe em várias comarcas. Agrupar só por vara_id mistura varas
+    -- diferentes. A identificação real é o par (comarca_id, vara_id).
+    vara_id,
+
     data_distribuicao,
     data_baixa,
     situacao,
