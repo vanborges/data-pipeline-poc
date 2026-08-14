@@ -36,9 +36,6 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Área local da professora (gabarito e ensaios) — NUNCA versionar
-solucoes/
-
 # Config local do Claude/editor
 .claude/
 

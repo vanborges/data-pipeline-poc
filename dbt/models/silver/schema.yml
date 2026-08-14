@@ -1,27 +1,47 @@
 version: 2
 
-# Qualidade de dados expressa como CÓDIGO EXECUTÁVEL.
-# `dbt test` verifica estas regras contra os dados de verdade.
-# Um teste que falha não é (necessariamente) um bug do SQL:
-# é um dado que violou uma regra declarada.
+# =====================================================================
+# TESTES DA CAMADA SILVER — qualidade de dados como CÓDIGO EXECUTÁVEL
+# =====================================================================
+# Cada teste vira uma consulta SQL que procura VIOLAÇÕES. Se ela
+# retorna alguma linha, o teste falha.
+#
+# Exemplo: o teste `not_null` em processo_id compila para
+#     select processo_id from stg_processos where processo_id is null
+# Nada de mágico — dá para ver o SQL gerado em dbt/target/compiled/.
+#
+# ⚠ Diferença importante:
+#   pytest    -> testa o CÓDIGO (a ingestão se comporta como esperado?)
+#   dbt test  -> testa os DADOS (eles respeitam as regras declaradas?)
+# =====================================================================
+
 models:
   - name: stg_processos
-    description: Processos tipados e preparados a partir do Bronze.
+    description: >
+      Processos tipados, deduplicados e com datas normalizadas.
+      É a base de tudo: se algo estiver errado aqui, contamina a Gold.
     columns:
       - name: processo_id
-        description: Identificador único do processo.
+        description: Identificador único do processo (chave natural).
         tests:
-          - not_null   # ATENÇÃO — este teste FALHA de propósito no início da atividade.
-          - unique     # Este também. Descubra por quê (olhe a origem!).
+          - not_null   # o registro sem id foi filtrado no modelo
+          - unique     # as duplicatas integrais foram removidas
       - name: data_distribuicao
         description: Data em que o processo foi distribuído.
         tests:
-          - not_null   # Falha enquanto o TODO de formato de data não for resolvido.
-      # TODO (desafio): adicione um teste accepted_values na coluna `situacao`
-      #   aceitando apenas: 'Baixado' e 'Em andamento'.
-      #   Docs: https://docs.getdbt.com/reference/resource-properties/data-tests
+          - not_null   # passa graças ao tratamento dos dois formatos de data
+      - name: situacao
+        description: Situação do processo na origem.
+        tests:
+          # accepted_values garante que a origem não invente valores novos.
+          # Se amanhã aparecer "Suspenso", o teste falha e nós ficamos
+          # sabendo — em vez de descobrir por um relatório errado.
+          - accepted_values:
+              arguments:
+                values: ['Baixado', 'Em andamento']
 
   - name: stg_comarcas
+    description: Cadastro de comarcas com nomes padronizados.
     columns:
       - name: comarca_id
         tests:
@@ -29,8 +49,21 @@ models:
           - unique
 
   - name: stg_classes
+    description: Classes processuais deduplicadas (um registro por classe_id).
     columns:
       - name: classe_id
         tests:
           - not_null
-          # TODO (desafio): após deduplicar no modelo, adicione o teste `unique` aqui.
+          # este `unique` é a prova de que a deduplicação funcionou:
+          # sem o row_number() do modelo, ele falharia
+          - unique
+
+  - name: stg_movimentacoes
+    description: Eventos de movimentação processual, deduplicados.
+    columns:
+      - name: processo_id
+        tests:
+          - not_null
+      - name: data_movimento
+        tests:
+          - not_null

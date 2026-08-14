@@ -1,34 +1,70 @@
 version: 2
 
+# =====================================================================
+# TESTES DA CAMADA GOLD
+# =====================================================================
+# Aqui aparece o teste mais interessante do projeto: `relationships`.
+#
+# Em um banco relacional, a integridade entre fato e dimensão seria
+# garantida por uma CHAVE ESTRANGEIRA — o banco IMPEDIRIA a gravação
+# inválida. Em arquivos Parquet não existe FK.
+#
+# A integridade vira então uma VERIFICAÇÃO: o teste procura órfãos
+# (registros do fato apontando para dimensão inexistente).
+#
+# ⚠ A palavra importa: a FK IMPEDIA; o teste apenas DETECTA.
+# É a Era 2 da aula anterior — o lake ganhou flexibilidade e perdeu
+# garantias nativas.
+# =====================================================================
+
 models:
   - name: fato_processo
     description: >
-      Tabela fato no grão de processo. Permite derivar o tempo de
-      tramitação e agregá-lo por comarca, classe e período.
+      Tabela fato no grão de processo (uma linha = um processo).
+      Contém a medida tempo_tramitacao_dias e as chaves para as
+      dimensões comarca, classe e tempo.
     columns:
       - name: processo_id
+        description: Identificador do processo (dimensão degenerada).
         tests:
           - not_null
+          - unique     # garante o GRÃO: um processo não pode repetir
       - name: comarca_id
+        description: Chave para dim_comarca.
         tests:
-          # Integridade referencial expressa como teste:
-          # todo comarca_id do fato precisa existir na dimensão.
-          # ATENÇÃO — falha de propósito no início (há um id órfão na origem).
+          # o "FK que não existe": procura processos apontando para
+          # comarca inexistente. Passa porque o modelo já filtra —
+          # mas o teste continua vigiando cargas futuras.
           - relationships:
               arguments:
                 to: ref('dim_comarca')
                 field: comarca_id
-      # TODO (desafio): crie o teste de relacionamento equivalente
-      #   entre classe_id e dim_classe.
+      - name: classe_id
+        description: Chave para dim_classe.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_classe')
+                field: classe_id
 
   - name: dim_comarca
+    description: Dimensão conformada de comarca.
     columns:
       - name: comarca_id
+        tests:
+          - not_null
+          - unique     # dimensão com chave duplicada causaria fan-out
+
+  - name: dim_classe
+    description: Dimensão conformada de classe processual.
+    columns:
+      - name: classe_id
         tests:
           - not_null
           - unique
 
   - name: dim_tempo
+    description: Dimensão de calendário, gerada pelo pipeline.
     columns:
       - name: data
         tests:

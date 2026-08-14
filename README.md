@@ -2,13 +2,15 @@
 
 Prova de conceito da disciplina **Gestão e Governança de Dados** (Especialização em Engenharia de Software Inteligente · FACOM/UFMS).
 
-Na aula anterior, estudamos conceitualmente a jornada `Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo`. Aqui, essa jornada deixa de ser um desenho e vira um pipeline que você executa e completa.
+Na aula anterior, estudamos conceitualmente a jornada `Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo`. Aqui ela deixa de ser um desenho e vira um pipeline que executa.
+
+> **Este projeto está completo e comentado.** Cada arquivo explica o que faz, qual problema resolve e que conceito materializa. A ordem de leitura está em [`POC.md`](POC.md).
 
 ## A pergunta de negócio
 
 > **Qual é o tempo médio de tramitação por comarca, classe e período?**
 
-Uma pergunta simples de enunciar. Todo o projeto existe para respondê-la de forma **confiável e reproduzível** — e você vai descobrir que isso exige a jornada inteira.
+Uma pergunta simples de enunciar. Todo o projeto existe para respondê-la de forma **confiável e reproduzível** — e responder assim exige a jornada inteira.
 
 ## O problema
 
@@ -106,18 +108,58 @@ data-pipeline-poc/
 │
 ├── notebooks/
 │   └── exploracao.ipynb  # explorar os dados de cada camada (opcional)
+├── consultas/
+│   └── analise.sql       # o consumo: 5 consultas comentadas (+ 2 armadilhas)
+├── scripts/
+│   └── criar_esaj_simulado.py   # monta um OLTP normalizado p/ comparação
 ├── tests/                # pytest: testa o CÓDIGO da ingestão
 └── docs/
-    └── architecture.md   # diagrama e decisões de arquitetura
+    ├── architecture.md              # camadas, decisões e as 5 etapas do dbt run
+    └── comparacao-oltp-vs-gold.md   # a mesma pergunta: no OLTP × na Gold
 ```
 
 **Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage); `src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado caminha da esquerda para a direita dentro de `data/` (`fontes_poc → bronze → silver → gold`), e cada salto é feito por um pedaço de código diferente: o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml` não movem dados — declaram **testes e documentação** sobre cada modelo.
 
 ---
 
+## O que este projeto demonstra
+
+| Conceito | Onde ver |
+|---|---|
+| Fontes ≠ Bronze | `data/fontes_poc/` × `data/bronze/` |
+| Ingestão absorve a diversidade das fontes | `src/ingest.py` (CSV × JSON) |
+| Parquet: colunar, tipado, comprimido | `notebooks/exploracao.ipynb`, seção 2.1 |
+| Bronze preserva — inclusive os defeitos | `data/bronze/` × modelos `stg_*` |
+| Qualidade de dados como código | `dbt/models/*/schema.yml` |
+| `source()` × `ref()` e a DAG | `sources.yml` + qualquer modelo Gold |
+| Grão, medida e dimensão | `fato_processo.sql` |
+| Dimensão degenerada, conformada e role-playing | `fato_processo.sql`, `dim_comarca.sql`, `dim_tempo.sql` |
+| Integridade sem chave estrangeira | teste `relationships` em `gold/schema.yml` |
+| O que a governança decide (e o SQL não) | `stg_classes.sql` |
+| Storage × engine | `external_location` em `sources.yml` |
+| A mesma pergunta no OLTP × na Gold | `docs/comparacao-oltp-vs-gold.md` |
+
+A consulta que fecha a jornada:
+
+```sql
+select
+    c.nome_comarca,
+    cl.nome_classe,
+    t.ano,
+    round(avg(f.tempo_tramitacao_dias), 1) as tempo_medio_dias
+from 'data/gold/fato_processo.parquet' f
+join 'data/gold/dim_comarca.parquet' c  on f.comarca_id = c.comarca_id
+join 'data/gold/dim_classe.parquet'  cl on f.classe_id  = cl.classe_id
+join 'data/gold/dim_tempo.parquet'   t  on f.data_distribuicao = t.data
+where f.tempo_tramitacao_dias is not null
+group by 1, 2, 3;
+```
+
+---
+
 ## Como executar
 
-O passo a passo completo da atividade — instalação, execução do pipeline, uso do dbt e o que você precisa implementar — está em **[`POC.md`](POC.md)**.
+Instalação, execução e a **ordem de leitura comentada** estão em **[`POC.md`](POC.md)**.
 
 ---
 

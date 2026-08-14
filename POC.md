@@ -1,281 +1,136 @@
-# POC — Passo a passo da atividade
+# Roteiro de leitura da PoC
 
-Este é o roteiro que você vai seguir. Leia o [`README.md`](README.md) antes: ele explica o que é a PoC, a pergunta de negócio e a arquitetura.
+Este projeto está **completo e comentado**. Ele não é um exercício: é um pipeline funcionando, escrito para ser **lido e explicado**.
 
-**A pergunta que precisamos responder ao final:**
+Cada arquivo traz comentários que respondem três perguntas: *o que este código faz*, *qual problema ele resolve* e *que conceito ele materializa*.
 
-> Qual é o tempo médio de tramitação por comarca, classe e período?
+> **A pergunta que move tudo:** qual é o tempo médio de tramitação por comarca, classe e período?
 
 ---
 
-## Passo 0 — Preparar o ambiente
-
-Requisitos: **Python 3.10 ou superior** e Git.
-
-**Linux / macOS**
+## Executando (5 minutos)
 
 ```bash
-git clone <url-do-repositorio>
-cd data-pipeline-poc
-
-python3 -m venv .venv
-source .venv/bin/activate
-
+python3 -m venv .venv && source .venv/bin/activate     # ou: conda create -n poc python=3.12
 pip install -r requirements.txt
 cp .env.example .env
+
+python -m src.pipeline        # Fontes -> Bronze
+cd dbt && dbt run             # Bronze -> Silver -> Gold
+dbt test                      # 17 testes de qualidade
 ```
 
-Depois de ativar o ambiente, seu prompt mostra `(.venv)` — é o sinal de que você está no ambiente isolado do projeto. A partir daí, **os comandos dos próximos passos são sempre os mesmos**, inclusive `python -m src.pipeline`: dentro do venv, `python` e `pip` apontam para o interpretador do projeto.
+O que esperar:
 
-**Alternativa: quem usa Anaconda/Miniconda**
-
-```bash
-conda create -n poc python=3.12 -y
-conda activate poc
-
-pip install -r requirements.txt
-cp .env.example .env
-```
-
-Nesse caso o prompt mostra `(poc)` em vez de `(.venv)`. Use **um** dos dois caminhos (venv **ou** conda) — misturar os dois costuma gerar confusão sobre qual `python` está valendo.
-
-### Se algo falhar
-
-| Erro | O que fazer |
+| Comando | Resultado |
 |---|---|
-| `command not found: python` | use `python3` para **criar** o venv; depois de ativá-lo, `python` funciona |
-| `pip: bad interpreter: .../python@3.x` | é o pip do sistema (Homebrew) quebrado — ignore-o: crie e ative o venv, e use o `pip` de dentro dele |
-| `python3` não existe | instale com `brew install python@3.12` — ou use o caminho com conda acima |
-| `source .venv/bin/activate` diz *no such file* | o venv não chegou a ser criado: rode o `python3 -m venv .venv` de novo e confira se ele terminou sem erro |
-
-> O `.env` guarda a configuração (caminhos das pastas) e **não** é versionado. Em projetos reais é onde ficam credenciais — por isso essa separação existe desde o início.
+| `python -m src.pipeline` | 4 Parquet em `data/bronze/` (122, 8, 7 e 408 registros) |
+| `dbt run` | 8 modelos: 4 Silver + 4 Gold, gravados como Parquet |
+| `dbt test` | **17 passed** |
+| `pytest` | **5 passed** |
 
 ---
 
-## Passo 1 — Conhecer as fontes
+## A ordem de leitura
 
-Abra os arquivos em `data/fontes_poc/`:
+Siga esta sequência — ela é a própria jornada do dado.
 
-| Arquivo | Formato | Conteúdo |
-|---|---|---|
-| `processos.csv` | CSV | processos: ids, comarca, classe, datas de distribuição/baixa, situação |
-| `movimentacoes.json` | JSON | eventos de movimentação por processo |
-| `comarcas.csv` | CSV | cadastro de comarcas |
-| `classes.csv` | CSV | cadastro de classes processuais |
+### 1. As fontes · `data/fontes_poc/`
 
-**Pense antes de seguir:** os dados existem e estão à mão. Você já consegue responder a pergunta de negócio? O que falta?
+Três CSVs e um JSON, como se tivessem sido exportados de sistemas diferentes do Tribunal. **Contêm problemas de propósito**: datas em dois formatos, duplicatas, identificador vazio, comarca inexistente, grafias inconsistentes.
 
----
+*Pergunta para a turma:* "os dados estão todos aqui. Já conseguimos responder a pergunta?"
 
-## Passo 2 — Executar a ingestão (Fontes → Bronze)
+### 2. A ingestão · `src/ingest.py`
+
+Lê cada fonte e grava Parquet no Bronze. Repare em duas decisões comentadas no código:
+
+- **tudo é lido como texto** (`dtype=str`) — tipar é interpretar, e interpretar é transformar (papel da Silver);
+- **compare `ingest_processos` (CSV) com `ingest_movimentacoes` (JSON)** — muda o leitor, não muda o destino. É a ingestão absorvendo a diversidade das fontes.
+
+`src/pipeline.py` é o orquestrador: 15 linhas mostrando que um pipeline é, antes de tudo, uma sequência de etapas com dependências.
+
+### 3. O Bronze · `data/bronze/`
+
+O que o pipeline capturou, preservado. **Mudou o formato, não o conteúdo** — as duplicatas e as datas malformadas continuam todas lá.
+
+Para olhar dentro de um Parquet (que é binário):
 
 ```bash
-python -m src.pipeline
+python -c "import duckdb; print(duckdb.sql(\"select * from 'data/bronze/processos.parquet' limit 5\"))"
 ```
 
-**O que aconteceu:**
+*Repare no `FROM`:* no lugar do nome da tabela, um **caminho de arquivo**. Nenhum servidor, nenhum import — armazenamento e processamento separados.
 
-- cada função de `src/ingest.py` leu uma fonte com Pandas (**tudo como texto**)
-- acrescentou o metadado `_ingerido_em`
-- gravou um Parquet em `data/bronze/`
+### 4. A Silver · `dbt/models/silver/`
 
-Abra `data/bronze/` e confira os arquivos criados: quatro Parquet, um por fonte.
+Onde o dado vira **confiável**. Leia nesta ordem:
 
-Vale abrir o `src/ingest.py` e comparar `ingest_processos()` (CSV) com `ingest_movimentacoes()` (JSON): muda o leitor, mas o destino é o mesmo. **É essa a função da ingestão — absorver a diversidade das fontes e entregar um formato único para o resto do pipeline.**
+| Modelo | O que demonstra |
+|---|---|
+| `stg_processos.sql` | tipagem, deduplicação e o tratamento dos **dois formatos de data** |
+| `stg_comarcas.sql` | padronização de texto (as quatro grafias de "Campo Grande") |
+| `stg_classes.sql` | deduplicação que exige uma **decisão de negócio** — qual grafia é a oficial? |
+| `stg_movimentacoes.sql` | o dado que veio de JSON, tratado igual aos de CSV |
 
-> Bronze = o que o pipeline capturou, próximo à origem.
-> Mudou o **formato** (CSV/JSON → Parquet), não o **conteúdo**.
+O `stg_classes.sql` é o mais interessante para discutir: o SQL escolhe uma grafia, mas quem *deveria* escolher é o dono do dado. É governança aparecendo dentro de um modelo dbt.
+
+### 5. A Gold · `dbt/models/gold/`
+
+Onde o dado ganha **forma** para responder à pergunta.
+
+| Modelo | O que demonstra |
+|---|---|
+| `fato_processo.sql` | grão, medida derivada, dimensão degenerada, decisões de negócio explícitas |
+| `dim_comarca.sql` | dimensão conformada + nota sobre SCD |
+| `dim_classe.sql` | como um problema não tratado na Silver contaminaria a Gold |
+| `dim_tempo.sql` | dimensão gerada (não vem de fonte nenhuma) e role-playing |
+
+O `fato_processo.sql` é o coração: leia os comentários da medida `tempo_tramitacao_dias` — eles explicam por que processos em andamento ficam nulos, por que tempo negativo é descartado, e por que a medida é guardada **por processo** em vez de já agregada.
+
+### 6. Os testes · `schema.yml` e `tests/`
+
+- `dbt/models/*/schema.yml` — qualidade de dados como código executável
+- `tests/test_ingestion.py` — testes do **código** da ingestão
+
+O teste `relationships` (em `gold/schema.yml`) é o mais didático: em Parquet **não existe chave estrangeira**, então a integridade referencial vira verificação. A FK *impedia*; o teste apenas *detecta*.
+
+Para ver o SQL que um teste vira:
+
+```bash
+cat dbt/target/compiled/tribunal/models/silver/schema.yml/not_null_stg_processos_processo_id.sql
+```
+
+### 7. O consumo · `consultas/analise.sql`
+
+Cinco consultas comentadas: a pergunta oficial, a evolução por ano, a análise por vara — mais **duas armadilhas** para demonstrar ao vivo (o `group by vara_id` sozinho e o fan-out ao misturar grãos).
+
+### 8. O lineage
+
+```bash
+cd dbt && dbt docs generate && dbt docs serve
+```
+
+A DAG do projeto no navegador, com a documentação que nasceu dos mesmos `schema.yml` que declaram os testes.
 
 ---
 
-## Passo 3 — Investigar a qualidade dos dados
+## Material de apoio
 
-Consulte o Bronze direto, sem importar nada:
-
-```bash
-python -c "import duckdb; print(duckdb.sql(\"select * from 'data/bronze/processos.parquet' limit 10\"))"
-```
-
-> Prefere uma interface visual? Abra **`notebooks/exploracao.ipynb`** no VS Code: ele traz estas mesmas investigações prontas, além de uma seção que mostra o Parquet por dentro (schema, compressão por coluna) e a comparação entre as camadas.
-
-Procure problemas. Sugestões de investigação:
-
-```sql
--- datas em formatos diferentes?
-select data_distribuicao from 'data/bronze/processos.parquet' order by 1 desc limit 10;
-
--- registros duplicados?
-select processo_id, count(*) from 'data/bronze/processos.parquet'
-group by 1 having count(*) > 1;
-
--- identificadores ausentes ou estranhos?
-select * from 'data/bronze/processos.parquet' where processo_id is null or processo_id = '';
-
--- nomes de comarca padronizados?
-select nome_comarca from 'data/bronze/comarcas.parquet';
-```
-
-**Anote o que encontrar.** Cada problema aqui vira uma decisão no próximo passo.
-
-**Pense:** quem deve corrigir isso — e em qual camada?
+| Documento | Conteúdo |
+|---|---|
+| [`docs/architecture.md`](docs/architecture.md) | as camadas, as decisões de arquitetura e **as 5 etapas do `dbt run`** |
+| [`docs/comparacao-oltp-vs-gold.md`](docs/comparacao-oltp-vs-gold.md) | a mesma pergunta no OLTP (5 tabelas, 4 joins, 1 CTE) e na Gold (2 arquivos, 1 join) |
+| [`scripts/criar_esaj_simulado.py`](scripts/criar_esaj_simulado.py) | monta um e-SAJ normalizado para demonstrar a comparação acima ao vivo |
 
 ---
 
-## Passo 4 — Construir a Silver com dbt
+## Demonstrações ao vivo
 
-```bash
-cd dbt
-dbt debug     # confere ambiente e conexão
-dbt run       # constrói Silver e Gold
-dbt test      # executa as regras de qualidade
-```
+**Um teste falhando.** Comente o `coalesce` da `data_distribuicao` em `stg_processos.sql` (deixando só o `try_cast`) e rode `dbt run && dbt test`. Duas datas em `DD/MM/AAAA` viram NULL e o teste `not_null` acusa. Mostra que **dado ruim quebra uma regra executável**.
 
-> Quer entender o que acontece por dentro desse `dbt run`? As cinco etapas (parse, compile, DAG, ordenação e execução) estão explicadas em [`docs/architecture.md`](docs/architecture.md#como-o-dbt-executa-o-que-acontece-quando-você-roda-dbt-run). Dica: abra `dbt/target/compiled/` e compare com o `.sql` que você escreveu.
+**A DAG se resolvendo sozinha.** `dbt run --select +fato_processo` — o dbt constrói `stg_processos` e `stg_comarcas` antes, sem que ninguém tenha escrito essa ordem.
 
-O `dbt test` vai **falhar**. Isso é esperado: as falhas apontam exatamente os problemas que você encontrou no Passo 3. Um teste que falha não é um bug do seu SQL — é um dado violando uma regra declarada.
+**O fan-out.** As duas últimas consultas de `consultas/analise.sql`: a média muda de 756,1 para 770,3 dias só por juntar tabelas de grãos diferentes.
 
-Agora abra os modelos em `dbt/models/silver/` e resolva os `TODO`:
-
-- **`stg_processos.sql`** — datas em `DD/MM/YYYY` viram NULL no `try_cast`;
-trate o formato alternativo. Depois: linhas duplicadas e `processo_id` nulo.
-- **`stg_comarcas.sql`** — padronize os nomes (caixa e espaços inconsistentes).
-- **`stg_classes.sql`** — o mesmo `classe_id` aparece com duas grafias:
-deduplique e escolha a grafia oficial.
-
-A cada mudança, rode de novo:
-
-```bash
-dbt run && dbt test
-```
-
-Acompanhe os arquivos sendo reescritos em `data/silver/`.
-
-> Silver = dado limpo, tipado, padronizado. Aqui muda o **conteúdo**.
-
----
-
-## Passo 5 — Construir a Gold
-
-Em `dbt/models/gold/`:
-
-- **`fato_processo.sql`** — calcule `tempo_tramitacao_dias`
-(dica: `date_diff('day', data_distribuicao, data_baixa)`). Decida: processos **em andamento** entram na média? E se o tempo der **negativo**, o que isso significa?
-- **`dim_tempo.sql`** — acrescente `nome_mes`, `trimestre` e `fim_de_semana`.
-
-```bash
-dbt run
-```
-
-Repare no `ref()` dos modelos: você nunca escreveu a ordem de execução — o dbt a deduz das dependências declaradas. É assim que nasce a DAG.
-
-> Gold = dado organizado para consumo. Aqui muda a **modelagem**
-> (fato + dimensões = star schema) e nasce a **medida**.
-
----
-
-## Passo 6 — Tratar as movimentações na Silver
-
-A ingestão do JSON já veio pronta, mas o **tratamento** não. Abra `dbt/models/silver/stg_movimentacoes.sql` e resolva os TODOs:
-
-- datas em formato `DD/MM/YYYY` (o mesmo problema da `stg_processos`);
-- eventos integralmente duplicados.
-
-```bash
-dbt run && dbt test
-```
-
-Depois, uma pergunta de integridade: existe movimentação apontando para um processo que não está na base? (Dica: um `left join` entre `stg_movimentacoes` e `stg_processos` responde — e um teste `relationships` transforma isso em regra permanente.)
-
----
-
-## Passo 7 — Ampliar os testes
-
-Em `dbt/models/silver/schema.yml` e `gold/schema.yml`:
-
-- teste `accepted_values` em `situacao` (aceitando `Baixado` e `Em andamento`)
-- teste `unique` em `stg_classes.classe_id` (após deduplicar)
-- teste `relationships` entre `fato_processo.classe_id` e `dim_classe`
-
-Em `tests/test_ingestion.py`, escreva o teste da ingestão do JSON e rode:
-
-```bash
-pytest
-```
-
-> `pytest` testa o **código**; `dbt test` testa os **dados**. São complementares.
-
-**Meta:** `dbt test` sem nenhuma falha.
-
----
-
-## Passo 8 — Responder a pergunta de negócio
-
-Com a Gold pronta, escreva a consulta que responde:
-
-> Qual é o tempo médio de tramitação por comarca, classe e período?
-
-Ela vai unir o fato às três dimensões. Execute a partir da raiz do projeto:
-
-```bash
-python -c "import duckdb; print(duckdb.sql(open('minha_consulta.sql').read()))"
-```
-
-Onde `minha_consulta.sql` lê a Gold direto do storage — por exemplo: `from 'data/gold/fato_processo.parquet' f join 'data/gold/dim_comarca.parquet' c on ...`
-
-### Variações (o gestor sempre pede mais)
-
-**a) Evolução no tempo:** o tempo médio por comarca **e ano** está melhorando ou piorando?
-
-**b) Por vara:** qual vara tem o maior tempo médio?
-
-> ⚠ Cuidado aqui — este é o exercício de verdade. Rode primeiro:
-> `select vara_id, count(distinct comarca_id) as comarcas from 'data/gold/fato_processo.parquet' group by 1`
-> A "vara 2" existe em quantas comarcas? O que isso significa para um `group by vara_id` sozinho?
-
-**c) Significância:** algumas médias são calculadas sobre 1 processo. Acrescente `having count(*) >= 3` e compare. Uma média de um caso é uma média?
-
-> 📖 Depois de responder, leia [`docs/comparacao-oltp-vs-gold.md`](docs/comparacao-oltp-vs-gold.md): a **mesma** pergunta escrita direto no banco transacional (5 tabelas, 4 joins, 1 CTE) e na Gold (2 arquivos, 1 join). Os números são idênticos — o que muda é o esforço e o risco de errar.
-
-**d) Qual data importa?** As consultas acima agrupam pelo ano da **distribuição**. Se o gestor pedir "processos baixados em 2024", o `join` com `dim_tempo` passa a ser em `data_baixa`. **Duas perguntas diferentes, dois joins diferentes** — e é fácil errar sem perceber.
-
----
-
-## Passo 9 — Documentação e lineage
-
-```bash
-cd dbt
-dbt docs generate
-dbt docs serve
-```
-
-Abra a DAG no navegador e percorra o caminho de um dado: da fonte até o fato. Compare com o desenho conceitual da aula:
-
-```text
-Fonte → Ingestão → Armazenamento → Transformação → Serving → Consumo
-```
-
-**Agora esse desenho existe de verdade.**
-
----
-
-## Checklist de entrega
-
-```text
-[ ] Ambiente preparado e pipeline executado
-[ ] Problemas de qualidade identificados e documentados
-[ ] Silver tratando datas, duplicatas e padronização
-[ ] Movimentações tratadas na Silver (datas e duplicatas)
-[ ] Gold com tempo_tramitacao_dias e dim_tempo completa
-[ ] Testes dbt ampliados e todos passando
-[ ] Teste pytest adicional escrito
-[ ] Consulta final respondendo a pergunta de negócio
-[ ] dbt docs gerado (lineage)
-```
-
-## Para pensar e discutir
-
-- **Engenharia:** o que você **construiu** nesta atividade?
-- **Gestão:** o que precisaria ser **mantido** para isso continuar funcionando
-amanhã, com dados novos?
-- **Governança:** quais decisões você tomou que **não eram técnicas**?
-(Qual grafia da classe é a oficial? Um processo com comarca inexistente deve ser descartado? Quem decide isso numa organização real?)
+**Storage × engine.** Apague `data/gold/dim_comarca.parquet` e tente consultar a Gold: erro. Prova que o dado mora no arquivo, e o DuckDB apenas sabe o endereço.
