@@ -234,6 +234,8 @@ Onde `minha_consulta.sql` lê a Gold direto do storage — por exemplo: `from 'd
 
 **c) Significância:** algumas médias são calculadas sobre 1 processo. Acrescente `having count(*) >= 3` e compare. Uma média de um caso é uma média?
 
+> 📖 Depois de responder, leia [`docs/comparacao-oltp-vs-gold.md`](docs/comparacao-oltp-vs-gold.md): a **mesma** pergunta escrita direto no banco transacional (5 tabelas, 4 joins, 1 CTE) e na Gold (2 arquivos, 1 join). Os números são idênticos — o que muda é o esforço e o risco de errar.
+
 **d) Qual data importa?** As consultas acima agrupam pelo ano da **distribuição**. Se o gestor pedir "processos baixados em 2024", o `join` com `dim_tempo` passa a ser em `data_baixa`. **Duas perguntas diferentes, dois joins diferentes** — e é fácil errar sem perceber.
 
 ---
