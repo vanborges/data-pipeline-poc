@@ -19,7 +19,7 @@ Os dados de que precisamos estão espalhados em fontes diferentes de um Tribunal
 ## Arquitetura
 
 ```text
-FONTES            CSV / JSON            (data/fontes_poc)
+FONTES            CSV / JSON            (data/raw)
   ↓
 INGESTÃO          Python + Pandas       (src/)
   ↓
@@ -50,14 +50,12 @@ Detalhes e diagrama em [`docs/architecture.md`](docs/architecture.md).
 > O dbt começa a trabalhar quando os dados **já estão disponíveis para um
 > engine analítico**. Trazer os dados até lá é papel da ingestão.
 
-### `data/fontes_poc` não é Bronze
+### `data/raw` não é Bronze
 
-- **`data/fontes_poc/`** — os arquivos que a origem nos entregou (versionados no repo, para a atividade).
+- **`data/raw/`** — os arquivos que a origem nos entregou (versionados no repo, para a atividade).
 - **`data/bronze/`** — o que o **nosso pipeline capturou e persistiu** (gerado quando você executa a ingestão), preservado o mais próximo possível da origem, com metadado de ingestão e formato eficiente.
 
-> Nota sobre nomes: em muitas empresas a camada Bronze é chamada de **raw zone** —
-> por isso evitamos batizar a pasta de origem de `raw`. Aqui, "fontes" são os
-> arquivos ANTES do pipeline; Bronze é o que o pipeline capturou.
+> ⚠ **Cuidado com a palavra "raw".** Aqui `data/raw/` são os arquivos **recebidos das origens** — o que existe ANTES do pipeline. Em boa parte do mercado, porém, *raw zone* é usado como **sinônimo de Bronze**. São coisas diferentes: `raw` é o que a origem entregou; `bronze` é o que o **nosso pipeline** capturou e persistiu.
 
 ### O Medallion mora em `data/`
 
@@ -65,7 +63,7 @@ A pasta `data/` é o **storage** desta PoC — um mini data lake local:
 
 ```text
 data/
-├── fontes_poc/   # sistemas de origem (simulados)
+├── raw/   # sistemas de origem (simulados)
 ├── bronze/       # dado capturado, próximo à origem      <- escrito pela INGESTÃO (Pandas)
 ├── silver/       # dado limpo, tipado, padronizado       <- escrito pelo DBT
 └── gold/         # dado modelado para consumo (fato/dims) <- escrito pelo DBT
@@ -85,7 +83,7 @@ data-pipeline-poc/
 ├── requirements.txt      # dependências Python do projeto
 │
 ├── data/                 # o STORAGE da PoC (nosso mini data lake local)
-│   ├── fontes_poc/       #   sistemas de origem simulados (CSV/JSON) — versionados
+│   ├── raw/       #   sistemas de origem simulados (CSV/JSON) — versionados
 │   ├── bronze/           #   camada Bronze: Parquet gravado pela INGESTÃO
 │   ├── silver/           #   camada Silver: Parquet gravado pelo DBT
 │   ├── gold/             #   camada Gold:   Parquet gravado pelo DBT
@@ -118,7 +116,7 @@ data-pipeline-poc/
     └── comparacao-oltp-vs-gold.md   # a mesma pergunta: no OLTP × na Gold
 ```
 
-**Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage); `src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado caminha da esquerda para a direita dentro de `data/` (`fontes_poc → bronze → silver → gold`), e cada salto é feito por um pedaço de código diferente: o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml` não movem dados — declaram **testes e documentação** sobre cada modelo.
+**Como ler essa estrutura:** `data/` é o *lugar onde os dados vivem* (storage); `src/` e `dbt/` são o *código que os move e transforma* (processamento). O dado caminha da esquerda para a direita dentro de `data/` (`raw → bronze → silver → gold`), e cada salto é feito por um pedaço de código diferente: o primeiro pela ingestão Python, os demais pelo dbt. Os arquivos `schema.yml` não movem dados — declaram **testes e documentação** sobre cada modelo.
 
 ---
 
@@ -126,7 +124,7 @@ data-pipeline-poc/
 
 | Conceito | Onde ver |
 |---|---|
-| Fontes ≠ Bronze | `data/fontes_poc/` × `data/bronze/` |
+| Fontes ≠ Bronze | `data/raw/` × `data/bronze/` |
 | Ingestão absorve a diversidade das fontes | `src/ingest.py` (CSV × JSON) |
 | Parquet: colunar, tipado, comprimido | `notebooks/exploracao.ipynb`, seção 2.1 |
 | Bronze preserva — inclusive os defeitos | `data/bronze/` × modelos `stg_*` |

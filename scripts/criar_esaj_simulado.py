@@ -35,11 +35,11 @@ insert into comarca
 select cast(comarca_id as integer),
        array_to_string(list_transform(string_split(lower(trim(nome_comarca)),' '), w -> upper(w[1])||w[2:]),' '),
        upper(trim(uf))
-from 'data/fontes_poc/comarcas.csv';
+from 'data/raw/comarcas.csv';
 
 insert into classe
 select distinct on (cast(classe_id as integer)) cast(classe_id as integer), nome_classe
-from 'data/fontes_poc/classes.csv';
+from 'data/raw/classes.csv';
 
 insert into situacao values (1,'Em andamento'), (2,'Baixado');
 insert into tipo_movimento values
@@ -62,7 +62,7 @@ select
              try_cast(try_strptime(data_distribuicao,'%d/%m/%Y') as date)) as data_distribuicao,
     coalesce(try_cast(data_baixa as date),
              try_cast(try_strptime(data_baixa,'%d/%m/%Y') as date)) as data_baixa
-from 'data/fontes_poc/processos.csv'
+from 'data/raw/processos.csv'
 where try_cast(processo_id as bigint) is not null
   and try_cast(comarca_id as integer) in (select comarca_id from comarca);
 

@@ -10,7 +10,7 @@ __pycache__/
 
 # Dados gerados pelo pipeline (o aluno os produz ao executar).
 # As pastas do medallion ficam no repo (via .gitkeep); o CONTEÚDO é gerado.
-# ATENÇÃO: data/fontes_poc/ É versionado — são as fontes da atividade.
+# ATENÇÃO: data/raw/ É versionado — são as fontes da atividade.
 data/bronze/*
 data/silver/*
 data/gold/*

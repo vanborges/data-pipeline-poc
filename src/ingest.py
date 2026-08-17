@@ -1,4 +1,4 @@
-"""Ingestão: leva os dados das FONTES (data/fontes_poc) para o BRONZE (data/bronze).
+"""Ingestão: leva os dados das FONTES (data/raw) para o BRONZE (data/bronze).
 
 Regras desta camada:
     - Ler os arquivos de origem (CSV/JSON) com Pandas.
@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 
-from src.config import DATA_BRONZE_PATH, DATA_FONTES_PATH
+from src.config import DATA_BRONZE_PATH, DATA_RAW_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def _gravar_bronze(df: pd.DataFrame, nome: str) -> None:
 
 def ingest_processos() -> None:
     """[PRONTO — referência] Ingestão do CSV de processos."""
-    origem = DATA_FONTES_PATH / "processos.csv"
+    origem = DATA_RAW_PATH / "processos.csv"
     logger.info("Lendo %s", origem.name)
     # dtype=str => tudo chega como texto.
     # Decisão consciente: o Bronze preserva o dado como veio;
@@ -47,7 +47,7 @@ def ingest_processos() -> None:
 
 def ingest_comarcas() -> None:
     """[PRONTO] Ingestão do CSV de comarcas."""
-    origem = DATA_FONTES_PATH / "comarcas.csv"
+    origem = DATA_RAW_PATH / "comarcas.csv"
     logger.info("Lendo %s", origem.name)
     df = pd.read_csv(origem, dtype=str)
     logger.info("%d registros encontrados", len(df))
@@ -56,7 +56,7 @@ def ingest_comarcas() -> None:
 
 def ingest_classes() -> None:
     """[PRONTO] Ingestão do CSV de classes processuais."""
-    origem = DATA_FONTES_PATH / "classes.csv"
+    origem = DATA_RAW_PATH / "classes.csv"
     logger.info("Lendo %s", origem.name)
     df = pd.read_csv(origem, dtype=str)
     logger.info("%d registros encontrados", len(df))
@@ -79,7 +79,7 @@ def ingest_movimentacoes() -> None:
     Essa é a função da camada de ingestão: absorver a diversidade das fontes
     e entregar um formato único para o resto do pipeline.
     """
-    origem = DATA_FONTES_PATH / "movimentacoes.json"
+    origem = DATA_RAW_PATH / "movimentacoes.json"
     logger.info("Lendo %s", origem.name)
     df = pd.read_json(origem).astype(str)
     logger.info("%d registros encontrados", len(df))

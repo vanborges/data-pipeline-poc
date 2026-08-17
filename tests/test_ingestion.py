@@ -16,7 +16,7 @@ dados bons (o contrário).
 import pandas as pd
 
 from src import ingest
-from src.config import DATA_BRONZE_PATH, DATA_FONTES_PATH
+from src.config import DATA_BRONZE_PATH, DATA_RAW_PATH
 
 
 def test_ingest_processos_gera_parquet():
@@ -34,7 +34,7 @@ def test_bronze_preserva_todas_as_linhas_da_origem():
     é papel da Silver, não da captura.
     """
     ingest.ingest_processos()
-    origem = pd.read_csv(DATA_FONTES_PATH / "processos.csv", dtype=str)
+    origem = pd.read_csv(DATA_RAW_PATH / "processos.csv", dtype=str)
     bronze = pd.read_parquet(DATA_BRONZE_PATH / "processos.parquet")
     assert len(bronze) == len(origem)
 
@@ -69,6 +69,6 @@ def test_ingest_movimentacoes_gera_parquet_com_colunas():
 def test_bronze_movimentacoes_preserva_eventos():
     """O Bronze do JSON também preserva a contagem da origem."""
     ingest.ingest_movimentacoes()
-    origem = pd.read_json(DATA_FONTES_PATH / "movimentacoes.json")
+    origem = pd.read_json(DATA_RAW_PATH / "movimentacoes.json")
     bronze = pd.read_parquet(DATA_BRONZE_PATH / "movimentacoes.parquet")
     assert len(bronze) == len(origem)

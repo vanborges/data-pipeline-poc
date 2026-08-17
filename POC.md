@@ -35,7 +35,7 @@ O que esperar:
 
 Siga esta sequência — ela é a própria jornada do dado.
 
-### 1. As fontes · `data/fontes_poc/`
+### 1. As fontes · `data/raw/`
 
 Três CSVs e um JSON, como se tivessem sido exportados de sistemas diferentes do Tribunal. **Contêm problemas de propósito**: datas em dois formatos, duplicatas, identificador vazio, comarca inexistente, grafias inconsistentes.
 
