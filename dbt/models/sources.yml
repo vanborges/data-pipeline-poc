@@ -10,8 +10,6 @@ sources:
       preservando os dados próximos à origem. O dbt-duckdb lê os
       arquivos diretamente via external_location — não é preciso
       carregar nada num servidor de banco.
-    meta:
-      external_location: "../data/bronze/{name}.parquet"
     tables:
       - name: processos
         description: Processos judiciais capturados do sistema transacional (CSV).
@@ -21,3 +19,9 @@ sources:
         description: Cadastro de classes processuais (CSV).
       - name: movimentacoes
         description: Eventos de movimentação processual (JSON). Só existe após o desafio de ingestão.
+    config:
+      meta:
+        # external_location é o que permite ao DuckDB ler o Parquet
+        # DIRETO do disco — sem carregar nada para dentro do banco.
+        # {name} é substituído pelo nome de cada tabela abaixo.
+        external_location: "../data/bronze/{name}.parquet"
