@@ -17,7 +17,7 @@ cp .env.example .env
 
 python -m src.pipeline        # Fontes -> Bronze
 cd dbt && dbt run             # Bronze -> Silver -> Gold
-dbt test                      # 17 testes de qualidade
+dbt test                      # 20 testes de qualidade
 ```
 
 O que esperar:
@@ -26,7 +26,7 @@ O que esperar:
 |---|---|
 | `python -m src.pipeline` | 4 Parquet em `data/bronze/` (122, 8, 7 e 408 registros) |
 | `dbt run` | 8 modelos: 4 Silver + 4 Gold, gravados como Parquet |
-| `dbt test` | **17 passed** |
+| `dbt test` | **20 passed** |
 | `pytest` | **5 passed** |
 
 ---
